@@ -4,7 +4,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as vision_utils
+import seaborn as sns
+import pandas as pd
 from data import reverse_transform
+
 
 def cosine_beta_schedule(timesteps, s=0.008):
     steps = timesteps + 1
@@ -68,6 +71,27 @@ def spectrum(sample):
     magnitude_spectrum = torch.log(torch.abs(fshift))
     
     return magnitude_spectrum
+
+def average_psd(tensor):
+    a = torch.fft.rfft(tensor, axis=0)
+    a = a.real ** 2 + a.imag ** 2
+    a = torch.sum(a, axis=1) / a.shape[1]
+    f = torch.fft.rfftfreq(tensor[0].shape[0])
+    return f.numpy(), a.numpy()
+
+def plot_psds(imgs, time):
+    sns.set_style('ticks')
+    for (i, psd_image) in enumerate(imgs):
+        data = {'frequency': psd_image[0],
+                'amplitude': psd_image[1]
+                }
+        df = pd.DataFrame(data)
+        sns.lineplot(x='frequency', y='amplitude', data=df, label=f'noise level at: {time[i]}')
+    plt.yscale('log')
+    plt.legend()
+    plt.grid(True)
+    sns.despine()
+    plt.show()
 
 if __name__ == "__main__":
     x = torch.randn(size=(5, 3, 64, 64))
