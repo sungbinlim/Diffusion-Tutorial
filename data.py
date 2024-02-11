@@ -27,7 +27,6 @@ def get_loader(image_path, image_size, batch_size, num_workers=2):
     """Create and return Dataloader."""
     
     transform = basic_transform(image_size)
-    
     dataset = ImageFolder(image_path, transform)
     data_loader = data.DataLoader(dataset=dataset,
                                   batch_size=batch_size,

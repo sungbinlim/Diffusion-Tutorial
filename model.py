@@ -281,7 +281,7 @@ class Unet(nn.Module):
         self.final_res_block = block_klass(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
-    def forward(self, x, time, x_self_cond=None):
+    def forward(self, time, x, x_self_cond=None):
         if self.self_condition:
             x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
             x = torch.cat((x_self_cond, x), dim=1)
@@ -326,5 +326,5 @@ if __name__ == "__main__":
     model = Unet(32)
     x = torch.randn(size=(5, 3, 32, 32))
     t = torch.randint(0, 1, size=(5, ))
-    y = model(x, t)
+    y = model(t, x)
     print(y.shape)
