@@ -47,7 +47,7 @@ def plot_seqs(imgs, with_orig=False, row_title=None, **imshow_kwargs):
 
     num_rows = len(imgs)
     num_cols = len(imgs[0]) + with_orig
-    fig, axs = plt.subplots(figsize=(200,200), nrows=num_rows, ncols=num_cols, squeeze=False)
+    fig, axs = plt.subplots(figsize=(200,200), nrows=num_rows, ncols=num_cols, squeeze=True)
     for row_idx, row in enumerate(imgs):
         row = [image] + row if with_orig else row
         for col_idx, img in enumerate(row):
@@ -63,6 +63,27 @@ def plot_seqs(imgs, with_orig=False, row_title=None, **imshow_kwargs):
             axs[row_idx, 0].set(ylabel=row_title[row_idx])
 
     plt.tight_layout()
+
+def create_img_seq(imgs_list):
+    """convert imgs_list(seq, tensor) to (b, seq)"""
+    batch_len = imgs_list[0].shape[0]
+    img_seq = [[seq[batch_index].cpu() for seq in imgs_list] for batch_index in range(batch_len)]
+    return img_seq
+
+def plot_img_seq(img_seq, **kwargs):
+    """plot (b, seq) imgs"""
+    img_list = [[tensor_to_sample(img.cpu()) for img in seq] for seq in create_img_seq(img_seq)]
+    row_num = len(img_list)
+    col_num = len(img_list[0])
+    fig, axs = plt.subplots(figsize=(10, 10), nrows=row_num, ncols=col_num, squeeze=True)
+    for idx_row, batch in enumerate(img_list):
+        for idx_col, img in enumerate(batch):
+            idx_num = col_num * idx_row + idx_col + 1
+            ax = axs[idx_row, idx_col]
+            ax.imshow(img, **kwargs)
+            ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    plt.tight_layout()
+    plt.show()
 
 # The Fourier transform function
 def spectrum(sample):  
@@ -92,6 +113,27 @@ def plot_psds(imgs, time):
     plt.grid(True)
     sns.despine()
     plt.show()
+
+def plot_psds_mnist(imgs, time):
+    sns.set_style('ticks')
+    for (i, psd_image) in enumerate(imgs):
+        data = {'frequency': psd_image[0],
+                'amplitude': psd_image[1][0][:len(psd_image[0])]
+                }
+        df = pd.DataFrame(data)
+        sns.lineplot(x='frequency', y='amplitude', data=df, label=f'noise level at: {time[i]}')
+    plt.yscale('log')
+    plt.legend()
+    plt.grid(True)
+    sns.despine()
+    plt.show()
+
+def average_psd_mnist(tensor):
+    a = torch.fft.rfft(tensor, axis=1)
+    a = a.real ** 2 + a.imag ** 2
+    a = torch.sum(a, axis=2) / a.shape[0]
+    f = torch.fft.rfftfreq(tensor[0].shape[0])
+    return f.numpy(), a.numpy()
 
 if __name__ == "__main__":
     x = torch.randn(size=(5, 3, 64, 64))
